@@ -1,9 +1,9 @@
-# HomeLab: `acehomelab`
+# HomeLab: 
 
 A from-scratch home server build on repurposed hardware, documented as a real infrastructure project rather than a pile of notes. The goal isn't to run services — it's to understand *why* each piece of infrastructure exists, *how* it works internally, and *how* the pieces fit together, one verified step at a time.
 
 **Owner:** Ace-095
-**Hostname:** `acehomelab`
+
 **OS:** Ubuntu Server 20.04.6 LTS
 **Status:** Sprint 0, 1 & 2 complete ✅ — Sprint 3 (Pi-hole / DNS) up next
 
