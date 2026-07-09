@@ -38,7 +38,6 @@ This is old, low-spec hardware on purpose — the constraints force a real under
 ---
 
 ## Architecture
-/home/ace/PROJECTS/MAIN/ACEHOMELAB/homelab-networking/architecture.png
 ![acehomelab architecture](docs/architecture.png)
 
 Docker Engine and Portainer are live as of Sprint 2. Pi-hole is being deployed now (Sprint 3); Tailscale, Jellyfin, Homepage, and the monitoring stack are still ahead.
