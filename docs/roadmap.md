@@ -1,10 +1,14 @@
 # Roadmap
 
-## Sprint 2 — Infrastructure Platform
-Docker Engine, Docker Compose, Docker networking, volumes, Portainer.
+## Sprint 2 — Infrastructure Platform ✅ Complete
+Storage architecture finalized, group/SGID permissions, Ubuntu Pro, Docker Engine (official repo), Docker Compose, Portainer. Full writeup: [docs/02-docker-platform.md](02-docker-platform.md).
 
-## Sprint 3 — Networking
-Pi-hole, local DNS resolution, ad-blocking.
+## Sprint 3 — Networking (in progress)
+- **DNS fundamentals first** — recursive vs. authoritative resolution, root servers, caching/TTL, UDP vs. TCP for DNS, the full path of a query from laptop to internet.
+- **Pi-hole** — deployed via Docker Compose. *Fix the Docker/UFW bypass (see Sprint 2 known gaps) before publishing port 53.*
+- **Router integration** — point the network's devices at Pi-hole for DNS.
+- **Local DNS** — friendly hostnames (`portainer.home`, `jellyfin.home`, `pihole.home`) instead of IPs.
+- **Monitoring** — observe DNS traffic and understand how queries actually flow through the network.
 
 ## Sprint 4 — Remote Access
 Tailscale, SSH key-based auth, disabling password authentication, core VPN concepts.

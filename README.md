@@ -5,7 +5,7 @@ A from-scratch home server build on repurposed hardware, documented as a real in
 **Owner:** Ace-095
 **Hostname:** `acehomelab`
 **OS:** Ubuntu Server 20.04.6 LTS
-**Status:** Sprint 0 & Sprint 1 complete ✅ — Sprint 2 (Docker) in progress
+**Status:** Sprint 0, 1 & 2 complete ✅ — Sprint 3 (Pi-hole / DNS) up next
 
 ---
 
@@ -37,42 +37,11 @@ This is old, low-spec hardware on purpose — the constraints force a real under
 
 ---
 
-## Current Architecture
+## Architecture
+/home/ace/PROJECTS/MAIN/ACEHOMELAB/homelab-networking/architecture.png
+![acehomelab architecture](docs/architecture.png)
 
-```
-Internet
-   │
-Router (DHCP reservation — static internal IP, redacted)
-   │
-Ubuntu Server 20.04.6 LTS (acehomelab)
-   │
-UFW Firewall (default deny incoming)
-   │
-   ├── SSH (22)
-   │
-   └── /srv/data  ← Disk 2, mounted by UUID
-```
-
-## Planned Architecture
-
-```
-Internet
-   │
-Router → DHCP Reservation
-   │
-Ubuntu Server
-   │
-UFW Firewall
-   │
-Docker Engine
-   │
-   ├── Pi-hole        (DNS / ad-blocking)
-   ├── Jellyfin        (media streaming)
-   ├── Tailscale       (remote access / VPN)
-   ├── Homepage        (dashboard)
-   ├── Portainer       (container management)
-   └── Monitoring stack (Uptime Kuma / Netdata / Grafana)
-```
+Docker Engine and Portainer are live as of Sprint 2. Pi-hole is being deployed now (Sprint 3); Tailscale, Jellyfin, Homepage, and the monitoring stack are still ahead.
 
 ---
 
@@ -82,8 +51,8 @@ Docker Engine
 |--------|--------------------------------|----------------|
 | 0      | OS install, SSH, networking, boot verification | ✅ Complete |
 | 1      | Hardening, storage, persistent mounts | ✅ Complete |
-| 2      | Docker Engine, Compose, networking, volumes, Portainer | 🔄 In progress |
-| 3      | Pi-hole, local DNS, ad-blocking | ⏳ Planned |
+| 2      | Docker Engine, Compose, networking, volumes, Portainer | ✅ Complete |
+| 3      | Pi-hole, local DNS, ad-blocking | 🔄 In progress |
 | 4      | Tailscale, SSH key-only auth   | ⏳ Planned |
 | 5      | Jellyfin, SMB, media organization | ⏳ Planned |
 | 6      | Monitoring (Uptime Kuma, Netdata, Prometheus, Grafana) | ⏳ Planned |
@@ -94,6 +63,7 @@ Detailed writeups for completed sprints live in [`docs/`](docs/):
 
 - **[Sprint 0 — Foundation](docs/00-foundation.md)** — OS install decisions, boot fix, networking, SSH
 - **[Sprint 1 — Storage & Hardening](docs/01-storage-and-hardening.md)** — firewall, disk health analysis, storage architecture, user strategy
+- **[Sprint 2 — Docker Platform](docs/02-docker-platform.md)** — storage finalized, group permissions + SGID, Ubuntu Pro, Docker, Compose, Portainer
 - **[Roadmap](docs/roadmap.md)** — Sprint 2–8 plan and success criteria
 
 ---
@@ -109,6 +79,8 @@ Detailed writeups for completed sprints live in [`docs/`](docs/):
 | Storage | UUID-based fstab mounts | Device names (`/dev/sdX`) can shift on reboot; UUIDs don't |
 | Docker data | Lives on Disk 1 (the reliable disk), not Disk 2 | Disk 2 has real wear (see below) — losing container configs/databases is worse than losing media |
 | Users | One admin (`ace`) + role users (`media`, `backup`), apps run in containers | Avoids one-Linux-user-per-app sprawl |
+| Shared directory permissions | Group ownership + SGID (`chmod 2775`) | New files auto-inherit the directory's group — no manual `chgrp` after every write |
+| Docker installation | Docker's official repo, not `apt install docker.io` or Snap | Current version, no Snap sandboxing quirks when doing networking work later |
 
 ---
 
@@ -116,9 +88,13 @@ Detailed writeups for completed sprints live in [`docs/`](docs/):
 
 Documenting this honestly is part of the point:
 
-- **Ubuntu 20.04 LTS standard support ended May 31, 2025.** Standard security patches from Canonical have stopped. Fix is free: enroll in Ubuntu Pro (free for personal use, up to 5 machines) for Expanded Security Maintenance through 2030 — `sudo pro attach` / `sudo pro enable esm-infra esm-apps`. This is queued ahead of Sprint 2.
+- **Docker bypasses UFW.** Docker writes its own iptables rules directly into the `FORWARD`/`DOCKER` chains, which are evaluated before UFW's (`INPUT`-only) rules — meaning any port a container publishes is reachable from the LAN regardless of UFW policy, and `ufw status` gives no warning that this is happening. Needs a `DOCKER-USER` chain fix (or the `ufw-docker` tool) before Pi-hole publishes port 53. See [Sprint 2](docs/02-docker-platform.md#known-gaps--next-actions).
+- **`docker` group membership is root-equivalent** — anyone in it effectively controls the host. Documented, not yet restricted beyond the single admin account.
+- **Portainer's admin UI** needs a strong password and ideally network-level restriction once it's routinely left running.
 - **`unattended-upgrades` isn't configured yet** — security patches currently require manual `apt upgrade`.
 - **SSH is still password-based** — key-only auth is scheduled for Sprint 4, but until then it's the weakest point in the current setup.
+
+✅ *Resolved:* Ubuntu 20.04's standard support gap — Ubuntu Pro (free tier) enabled in Sprint 2, ESM active through 2030.
 
 ---
 
@@ -130,5 +106,7 @@ homelab-networking/
 └── docs/
     ├── 00-foundation.md
     ├── 01-storage-and-hardening.md
+    ├── 02-docker-platform.md
+    ├── architecture.png
     └── roadmap.md
 ```
