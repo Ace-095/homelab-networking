@@ -5,7 +5,7 @@ A from-scratch home server build on repurposed hardware, documented as a real in
 **Owner:** Ace-095
 **Hostname:** `acehomelab`
 **OS:** Ubuntu Server 20.04.6 LTS
-**Status:** Sprint 0, 1 & 2 complete ✅ — Sprint 3 (Pi-hole / DNS) up next
+**Status:** Sprint 0 through 3.5 complete ✅ — Sprint 4 (Homepage dashboard + Docker/UFW filtering) up next
 
 ---
 
@@ -38,10 +38,10 @@ This is old, low-spec hardware on purpose — the constraints force a real under
 ---
 
 ## Architecture
-/home/ace/PROJECTS/MAIN/ACEHOMELAB/homelab-networking/architecture.png
+
 ![acehomelab architecture](docs/architecture.png)
 
-Docker Engine and Portainer are live as of Sprint 2. Pi-hole is being deployed now (Sprint 3); Tailscale, Jellyfin, Homepage, and the monitoring stack are still ahead.
+Docker Engine, Portainer, and Pi-hole are live — Pi-hole is now the DNS resolver for two real client devices (laptop + phone), with the router-wide switch still pending. Homepage is up next; Tailscale, Jellyfin, and monitoring are still ahead.
 
 ---
 
@@ -52,19 +52,22 @@ Docker Engine and Portainer are live as of Sprint 2. Pi-hole is being deployed n
 | 0      | OS install, SSH, networking, boot verification | ✅ Complete |
 | 1      | Hardening, storage, persistent mounts | ✅ Complete |
 | 2      | Docker Engine, Compose, networking, volumes, Portainer | ✅ Complete |
-| 3      | Pi-hole, local DNS, ad-blocking | 🔄 In progress |
-| 4      | Tailscale, SSH key-only auth   | ⏳ Planned |
-| 5      | Jellyfin, SMB, media organization | ⏳ Planned |
-| 6      | Monitoring (Uptime Kuma, Netdata, Prometheus, Grafana) | ⏳ Planned |
-| 7      | Backups, cron automation, health checks | ⏳ Planned |
-| 8      | Reverse proxy, HTTPS, internal DNS | ⏳ Planned |
+| 3      | Pi-hole, local DNS, ad-blocking | ✅ Complete |
+| 4      | Homepage — unified dashboard for all services | 🔄 Up next |
+| 5      | Tailscale, SSH key-only auth | ⏳ Planned |
+| 6      | Jellyfin, SMB, media organization | ⏳ Planned |
+| 7      | Monitoring (Uptime Kuma, Netdata, Prometheus, Grafana) | ⏳ Planned |
+| 8      | Backups, cron automation, health checks | ⏳ Planned |
+| 9      | Reverse proxy, HTTPS, internal DNS, dedicated IPv6 sprint | ⏳ Planned |
 
 Detailed writeups for completed sprints live in [`docs/`](docs/):
 
 - **[Sprint 0 — Foundation](docs/00-foundation.md)** — OS install decisions, boot fix, networking, SSH
 - **[Sprint 1 — Storage & Hardening](docs/01-storage-and-hardening.md)** — firewall, disk health analysis, storage architecture, user strategy
 - **[Sprint 2 — Docker Platform](docs/02-docker-platform.md)** — storage finalized, group permissions + SGID, Ubuntu Pro, Docker, Compose, Portainer
-- **[Roadmap](docs/roadmap.md)** — Sprint 2–8 plan and success criteria
+- **[Sprint 3 — DNS Infrastructure (Pi-hole)](docs/03-dns-pihole.md)** — DNS fundamentals, staged rollout, port 53 conflict, first real client devices
+- **[Sprint 3.5 — Security Hardening](docs/03b-security-hardening.md)** — Docker/UFW investigated, SSH key-only auth, automatic updates, full reboot validation
+- **[Roadmap](docs/roadmap.md)** — Sprint 4–9 plan and success criteria
 
 ---
 
@@ -81,6 +84,9 @@ Detailed writeups for completed sprints live in [`docs/`](docs/):
 | Users | One admin (`ace`) + role users (`media`, `backup`), apps run in containers | Avoids one-Linux-user-per-app sprawl |
 | Shared directory permissions | Group ownership + SGID (`chmod 2775`) | New files auto-inherit the directory's group — no manual `chgrp` after every write |
 | Docker installation | Docker's official repo, not `apt install docker.io` or Snap | Current version, no Snap sandboxing quirks when doing networking work later |
+| DNS rollout | Pi-hole proven via direct queries first, then one client at a time (laptop → phone → router, last) | DNS has network-wide blast radius; router-wide change saved for last, after it's proven stable |
+| SSH authentication | Ed25519 keys only, passwords and root login disabled | Removes the most common remote attack vector; verified with effective-config checks, not just the edited file |
+| Security updates | `unattended-upgrades` confirmed active, not just installed | Installing a package isn't the same as confirming the service is running |
 
 ---
 
@@ -88,13 +94,12 @@ Detailed writeups for completed sprints live in [`docs/`](docs/):
 
 Documenting this honestly is part of the point:
 
-- **Docker bypasses UFW.** Docker writes its own iptables rules directly into the `FORWARD`/`DOCKER` chains, which are evaluated before UFW's (`INPUT`-only) rules — meaning any port a container publishes is reachable from the LAN regardless of UFW policy, and `ufw status` gives no warning that this is happening. Needs a `DOCKER-USER` chain fix (or the `ufw-docker` tool) before Pi-hole publishes port 53. See [Sprint 2](docs/02-docker-platform.md#known-gaps--next-actions).
+- **Docker/UFW filtering is understood but not yet implemented.** Sprint 3.5 confirmed exactly why Docker bypasses UFW (its rules sit in chains evaluated before UFW's `INPUT` chain) and identified `DOCKER-USER` as the correct fix point — but the actual filtering rules are Sprint 4 work. Until then, Pi-hole's and Portainer's published ports are reachable from anywhere on the LAN, not just the intended clients.
+- **No fallback DNS resolver on clients.** If the server goes down, the laptop and phone currently lose DNS entirely — no secondary resolver is configured.
+- **Portainer's admin password** — worth confirming it's strong and unique now that HTTPS access is in place.
 - **`docker` group membership is root-equivalent** — anyone in it effectively controls the host. Documented, not yet restricted beyond the single admin account.
-- **Portainer's admin UI** needs a strong password and ideally network-level restriction once it's routinely left running.
-- **`unattended-upgrades` isn't configured yet** — security patches currently require manual `apt upgrade`.
-- **SSH is still password-based** — key-only auth is scheduled for Sprint 4, but until then it's the weakest point in the current setup.
 
-✅ *Resolved:* Ubuntu 20.04's standard support gap — Ubuntu Pro (free tier) enabled in Sprint 2, ESM active through 2030.
+✅ *Resolved:* Ubuntu 20.04's standard support gap (Ubuntu Pro/ESM, Sprint 2) · `unattended-upgrades` confirmed active (Sprint 3.5) · SSH password authentication disabled in favor of Ed25519 keys, root login disabled (Sprint 3.5) · full reboot persistence validated across Docker, SSH, firewall, updates, and DNS (Sprint 3.5).
 
 ---
 
@@ -107,6 +112,8 @@ homelab-networking/
     ├── 00-foundation.md
     ├── 01-storage-and-hardening.md
     ├── 02-docker-platform.md
+    ├── 03-dns-pihole.md
+    ├── 03b-security-hardening.md
     ├── architecture.png
     └── roadmap.md
 ```
