@@ -21,13 +21,16 @@ Network file sharing (NAS) sharing the same storage as Jellyfin, dedicated Samba
 ## Sprint 7 — Tailscale ✅ Complete
 Mesh VPN remote access with no router ports opened; surfaced and fixed a real firewall gap where the new `tailscale0` interface wasn't trusted by the Sprint 4 `DOCKER-USER` rules. Full writeup: [docs/07-tailscale.md](07-tailscale.md).
 
-## Sprint 8 — Monitoring (up next)
-Uptime Kuma, Netdata, Prometheus, Grafana.
+## Sprint 8 — Monitoring Foundation ✅ Complete
+Uptime Kuma deployed for availability checks (Homepage, Jellyfin, Pi-hole, Portainer). Node Exporter and cAdvisor deployed for host- and container-level metrics respectively. Prometheus deployed to scrape both, verified via direct `curl` checks and target status. Entire monitoring stack placed on a dedicated, `--internal` Docker network, isolated from user-facing services by design. Full writeup: [docs/08-monitoring-foundation.md](08-monitoring-foundation.md).
 
-## Sprint 9 — Automation
-Scheduled backups (3-2-1 rule in practice), cron jobs, update automation, health checks.
+## Sprint 9 — Grafana ✅ Complete
+Grafana connected to Prometheus as a data source over Docker's internal DNS. Diagnosed and understood a dashboard-import failure (`Gateway Timeout`) caused directly by Sprint 8's `--internal` network design blocking outbound internet access — resolved by manually importing dashboard JSON rather than loosening network isolation. Node Exporter and cAdvisor dashboards live with real data. Full writeup: [docs/09-grafana.md](09-grafana.md).
 
-## Sprint 10 — Advanced Networking
+## Sprint 10 — Automation (up next)
+Scheduled backups (3-2-1 rule in practice), cron jobs, update automation, health checks. Also the point to close remaining open items: `DOCKER-USER` rules for Uptime Kuma/Grafana, reboot validation across Sprints 5–9, Jellyfin's undocumented root cause and firewall rule, Samba's literal config, and a fallback DNS resolver for clients.
+
+## Sprint 11 — Advanced Networking
 Reverse proxy (Nginx Proxy Manager), HTTPS/certificates, internal DNS, and a dedicated, in-depth IPv6 sprint (deferred from Sprint 3).
 
 ---
@@ -43,3 +46,4 @@ This HomeLab is considered successful when it:
 - Reflects an actual understanding of the networking involved, not just copy-pasted configuration
 - Is fully reproducible from this documentation
 - Has every sprint tested and written up before moving to the next
+- Can be observed — availability and performance both visible without logging into the host directly
